@@ -77,7 +77,7 @@ func recursiveEncode(hm interface{}) {
 	case reflect.Struct:
 		content, _ := xml.Marshal(hm)
 		decoder := xml.NewDecoder(bytes.NewReader(content))
-		token, e := decoder.Token()
+		token, _ := decoder.Token()
 		// StartElement
 		tokens = append(tokens, token)
 		// EndElement
