@@ -1,6 +1,7 @@
 package gosoap
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
 	"reflect"
@@ -73,6 +74,14 @@ func recursiveEncode(hm interface{}) {
 			recursiveEncode(v.MapIndex(key).Interface())
 			tokens = append(tokens, xml.EndElement{Name: t.Name})
 		}
+	case reflect.Struct:
+		content, _ := xml.Marshal(hm)
+		decoder := xml.NewDecoder(bytes.NewReader(content))
+		token, e := decoder.Token()
+		// StartElement
+		tokens = append(tokens, token)
+		// EndElement
+		tokens = append(tokens, xml.EndElement{Name: token.(xml.StartElement).Name})
 	case reflect.Slice:
 		for i := 0; i < v.Len(); i++ {
 			recursiveEncode(v.Index(i).Interface())
