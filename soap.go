@@ -41,7 +41,7 @@ func SoapClient(wsdl string) (*Client, error) {
 // Client struct hold all the informations about WSDL,
 // request and response of the server
 type Client struct {
-	HttpClient   *http.Client
+	HTTPClient   *http.Client
 	WSDL         string
 	URL          string
 	Method       string
@@ -55,7 +55,8 @@ type Client struct {
 	Username     string
 	Password     string
 
-	payload []byte
+	EnableDebug bool
+	payload     []byte
 }
 
 // GetLastRequest returns the last request
@@ -85,6 +86,10 @@ func (c *Client) Call(m string, p Params) (err error) {
 		return err
 	}
 
+	if c.EnableDebug {
+		fmt.Println(string(c.payload))
+	}
+
 	b, err := c.doRequest(c.Definitions.Services[0].Ports[0].SoapAddresses[0].Location)
 	if err != nil {
 		return err
@@ -95,6 +100,10 @@ func (c *Client) Call(m string, p Params) (err error) {
 
 	c.Body = soap.Body.Contents
 	c.Header = soap.Header.Contents
+
+	if c.EnableDebug {
+		fmt.Println(string(c.Body))
+	}
 
 	return err
 }
@@ -126,8 +135,8 @@ func (c *Client) doRequest(url string) ([]byte, error) {
 		req.SetBasicAuth(c.Username, c.Password)
 	}
 
-	if c.HttpClient == nil {
-		c.HttpClient = &http.Client{}
+	if c.HTTPClient == nil {
+		c.HTTPClient = &http.Client{}
 	}
 
 	req.ContentLength = int64(len(c.payload))
@@ -136,7 +145,7 @@ func (c *Client) doRequest(url string) ([]byte, error) {
 	req.Header.Add("Accept", "text/xml")
 	req.Header.Add("SOAPAction", c.SoapAction)
 
-	resp, err := c.HttpClient.Do(req)
+	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
