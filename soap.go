@@ -57,6 +57,8 @@ type Client struct {
 
 	EnableDebug bool
 	payload     []byte
+
+	StructParam interface{} // Used to upload parameters using struct instead of map.
 }
 
 // GetLastRequest returns the last request
@@ -64,8 +66,7 @@ func (c *Client) GetLastRequest() []byte {
 	return c.payload
 }
 
-// Call call's the method m with Params p
-func (c *Client) Call(m string, p Params) (err error) {
+func (c *Client) call() (err error) {
 	if c.Definitions == nil {
 		return errors.New("WSDL definitions not found")
 	}
@@ -74,8 +75,6 @@ func (c *Client) Call(m string, p Params) (err error) {
 		return errors.New("No Services found in WSDL definitions")
 	}
 
-	c.Method = m
-	c.Params = p
 	c.SoapAction = c.Definitions.GetSoapActionFromWsdlOperation(c.Method)
 	if c.SoapAction == "" {
 		c.SoapAction = fmt.Sprintf("%s/%s", c.URL, c.Method)
@@ -105,7 +104,25 @@ func (c *Client) Call(m string, p Params) (err error) {
 		fmt.Println(string(c.Body))
 	}
 
+	// After calling we need to reset both types of params
+	c.Params = nil
+	c.StructParam = nil
+
 	return err
+}
+
+// CallWithStructParam calls with struct param
+func (c *Client) CallWithStructParam(m string, p interface{}) (err error) {
+	c.Method = m
+	c.StructParam = p
+	return c.call()
+}
+
+// Call call's the method m with Params p
+func (c *Client) Call(m string, p Params) (err error) {
+	c.Method = m
+	c.Params = p
+	return c.call()
 }
 
 // Unmarshal get the body and unmarshal into the interface

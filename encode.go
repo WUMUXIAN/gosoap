@@ -41,7 +41,11 @@ func (c Client) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
 		return err
 	}
 
-	recursiveEncode(c.Params)
+	if len(c.Params) != 0 {
+		recursiveEncode(c.Params)
+	} else {
+		encodeBody(c.StructParam)
+	}
 
 	//end envelope
 	endBody(c.Method)
@@ -55,6 +59,16 @@ func (c Client) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
 	}
 
 	return e.Flush()
+}
+
+func encodeBody(s interface{}) {
+	content, _ := xml.Marshal(s)
+	decoder := xml.NewDecoder(bytes.NewReader(content))
+	token, _ := decoder.Token()
+	// StartElement
+	tokens = append(tokens, token)
+	// EndElement
+	tokens = append(tokens, xml.EndElement{Name: token.(xml.StartElement).Name})
 }
 
 func recursiveEncode(hm interface{}) {
