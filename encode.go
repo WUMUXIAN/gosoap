@@ -64,11 +64,52 @@ func (c Client) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
 func encodeBody(s interface{}) {
 	content, _ := xml.Marshal(s)
 	decoder := xml.NewDecoder(bytes.NewReader(content))
-	token, _ := decoder.Token()
-	// StartElement
-	tokens = append(tokens, token)
-	// EndElement
-	tokens = append(tokens, xml.EndElement{Name: token.(xml.StartElement).Name})
+	// Let's skip the first start element.
+	decoder.Token()
+	nameSpace := ""
+	nameSpaceTokenName := ""
+	for {
+		if token, e := decoder.Token(); e == nil {
+			switch v := token.(type) {
+			case xml.StartElement:
+				startElement := xml.StartElement{
+					Name: xml.Name{
+						Space: "",
+						Local: v.Name.Local,
+					},
+				}
+				// Starting of a namespace
+				if nameSpace == "" && v.Name.Space != "" {
+					nameSpace = v.Name.Space
+					nameSpaceTokenName = v.Name.Local
+					startElement.Name.Space = nameSpace
+				}
+				tokens = append(tokens, startElement)
+			case xml.EndElement:
+				endElemennt := xml.EndElement{
+					Name: xml.Name{
+						Space: "",
+						Local: v.Name.Local,
+					},
+				}
+				// Closing of a namespace
+				if nameSpaceTokenName == v.Name.Local {
+					endElemennt.Name.Space = nameSpace
+					nameSpace = ""
+					nameSpaceTokenName = ""
+				}
+				tokens = append(tokens, endElemennt)
+			case xml.CharData:
+				tokens = append(tokens, xml.CharData(string(v)))
+			default:
+				tokens = append(tokens, token)
+			}
+		} else {
+			break
+		}
+	}
+	// Let's remove the last element.
+	tokens = tokens[:len(tokens)-1]
 }
 
 func recursiveEncode(hm interface{}) {
@@ -88,14 +129,6 @@ func recursiveEncode(hm interface{}) {
 			recursiveEncode(v.MapIndex(key).Interface())
 			tokens = append(tokens, xml.EndElement{Name: t.Name})
 		}
-	case reflect.Struct:
-		content, _ := xml.Marshal(hm)
-		decoder := xml.NewDecoder(bytes.NewReader(content))
-		token, _ := decoder.Token()
-		// StartElement
-		tokens = append(tokens, token)
-		// EndElement
-		tokens = append(tokens, xml.EndElement{Name: token.(xml.StartElement).Name})
 	case reflect.Slice:
 		for i := 0; i < v.Len(); i++ {
 			recursiveEncode(v.Index(i).Interface())
