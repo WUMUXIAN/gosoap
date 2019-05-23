@@ -11,7 +11,6 @@ var tokens []xml.Token
 
 // MarshalXML envelope the body and encode to xml
 func (c Client) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
-
 	tokens = []xml.Token{}
 
 	//start envelope
@@ -44,6 +43,7 @@ func (c Client) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
 	if len(c.Params) != 0 {
 		recursiveEncode(c.Params)
 	} else {
+		// if we are using struct as param, we go down here.
 		encodeBody(c.StructParam)
 	}
 
