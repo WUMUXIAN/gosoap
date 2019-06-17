@@ -77,7 +77,9 @@ func encodeBody(s interface{}) {
 						Space: "",
 						Local: v.Name.Local,
 					},
-					Attr: v.Attr,
+				}
+				if len(v.Attr) > 1 {
+					startElement.Attr = v.Attr[1:]
 				}
 				// Starting of a namespace
 				if nameSpace == "" && v.Name.Space != "" {
